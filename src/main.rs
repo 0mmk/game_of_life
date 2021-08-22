@@ -5,7 +5,7 @@ fn main() {
     let contents = fs::read_to_string(filename)
                      .expect(format!("file `{}` not found", filename).as_str());
     let starting_value = contents.split("\n").skip(1).collect();
-    let info = get_info(&contents);
+    let info = get_conf(&contents);
     let mut game = Game::new(starting_value, info.alive, info.dead);
 
     clear_terminal();
@@ -19,18 +19,18 @@ fn main() {
     }
 }
 
-struct Info {
+struct Conf {
     alive: char,
     dead: char,
     millis: u64
 }
 
-fn get_info(contents: &String) -> Info {
+fn get_conf(contents: &String) -> Conf {
     let info: Vec<&str> = contents.split("\n").take(1).next().unwrap().split(":").collect();
     let alive  = info[0].chars().next().unwrap();
     let dead   = info[1].chars().next().unwrap();
     let millis  = info[2].parse::<u64>().unwrap();
-    Info { alive: alive, dead: dead, millis: millis }
+    Conf { alive: alive, dead: dead, millis: millis }
 }
 
 fn clear_terminal() {
