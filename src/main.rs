@@ -1,12 +1,11 @@
-use std::{thread, time, env, fs};
+use std::{thread, time, fs};
 
 fn main() {
     let filename = "game.txt";
     let contents = fs::read_to_string(filename)
                      .expect(format!("file `{}` not found", filename).as_str());
-    let starting_value = contents.split("\n").skip(1).collect();
     let info = get_conf(&contents);
-    let mut game = Game::new(starting_value, info.alive, info.dead);
+    let mut game = Game::new(info.starting_value, info.alive, info.dead);
 
     clear_terminal();
     println!("{}", game.to_string());
@@ -19,18 +18,20 @@ fn main() {
     }
 }
 
-struct Conf {
+struct Conf<'a> {
     alive: char,
     dead: char,
-    millis: u64
+    millis: u64,
+    starting_value: Vec<&'a str>
 }
 
 fn get_conf(contents: &String) -> Conf {
     let info: Vec<&str> = contents.split("\n").take(1).next().unwrap().split(":").collect();
     let alive  = info[0].chars().next().unwrap();
     let dead   = info[1].chars().next().unwrap();
-    let millis  = info[2].parse::<u64>().unwrap();
-    Conf { alive: alive, dead: dead, millis: millis }
+    let millis = info[2].parse::<u64>().unwrap();
+    let starting_value = contents.split("\n").skip(1).collect();
+    Conf { alive: alive, dead: dead, millis: millis, starting_value: starting_value }
 }
 
 fn clear_terminal() {
