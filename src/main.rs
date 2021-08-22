@@ -4,22 +4,33 @@ fn main() {
     let filename = "game.txt";
     let contents = fs::read_to_string(filename)
                      .expect(format!("file `{}` not found", filename).as_str());
-    let info: Vec<&str> = contents.split("\n").take(1).next().unwrap().split(":").collect();
-    let alive  = info[0].chars().next().unwrap();
-    let dead   = info[1].chars().next().unwrap();
-    let millis  = info[2].parse::<u64>().unwrap();
     let starting_value = contents.split("\n").skip(1).collect();
-    let mut game = Game::new(starting_value, alive, dead);
+    let info = get_info(&contents);
+    let mut game = Game::new(starting_value, info.alive, info.dead);
 
     clear_terminal();
     println!("{}", game.to_string());
 
     loop {
-        thread::sleep(time::Duration::from_millis(millis));
+        thread::sleep(time::Duration::from_millis(info.millis));
         game.next();
         clear_terminal();
         print!("{}", game.to_string());
     }
+}
+
+struct Info {
+    alive: char,
+    dead: char,
+    millis: u64
+}
+
+fn get_info(contents: &String) -> Info {
+    let info: Vec<&str> = contents.split("\n").take(1).next().unwrap().split(":").collect();
+    let alive  = info[0].chars().next().unwrap();
+    let dead   = info[1].chars().next().unwrap();
+    let millis  = info[2].parse::<u64>().unwrap();
+    Info { alive: alive, dead: dead, millis: millis }
 }
 
 fn clear_terminal() {
