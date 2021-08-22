@@ -4,18 +4,9 @@ fn main() {
     let filename = "game.txt";
     let contents = fs::read_to_string(filename)
                      .expect(format!("file `{}` not found", filename).as_str());
-    let info = get_conf(&contents);
-    let mut game = Game::new(info.starting_value, info.alive, info.dead);
-
-    clear_terminal();
-    println!("{}", game.to_string());
-
-    loop {
-        thread::sleep(time::Duration::from_millis(info.millis));
-        game.next();
-        clear_terminal();
-        print!("{}", game.to_string());
-    }
+    let conf = get_conf(&contents);
+    let mut game = Game::new(conf);
+    game.start();
 }
 
 struct Conf<'a> {
@@ -41,7 +32,8 @@ fn clear_terminal() {
 struct Game {
     grid: Vec<Vec<bool>>,
     alive: char,
-    dead: char
+    dead: char,
+    millis: u64
 }
 
 #[derive(Debug)]
@@ -60,18 +52,31 @@ impl Pos {
 }
 
 impl Game {
-    fn new(starting_value: Vec<&str>, alive: char, dead: char) -> Self {
+    fn new(conf: Conf) -> Self {
         let mut game = Game {
             grid: vec![],
-            alive: alive,
-            dead: dead
+            alive: conf.alive,
+            dead: conf.dead,
+            millis: conf.millis
         };
 
-        for row in starting_value {
-            let row = row.chars().map(|c| c == alive).collect();
+        for row in &conf.starting_value {
+            let row = row.chars().map(|c| c == conf.alive).collect();
             game.grid.push(row);
         }
         game
+    }
+
+    fn start(&mut self) {
+        clear_terminal();
+        println!("{}", self.to_string());
+
+        loop {
+            thread::sleep(time::Duration::from_millis(self.millis));
+            self.next();
+            clear_terminal();
+            print!("{}", self.to_string());
+        }
     }
 
     fn next(&mut self) {
