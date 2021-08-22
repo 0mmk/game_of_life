@@ -1,13 +1,21 @@
-use std::{thread, time};
+use std::{thread, time, env, fs};
 
 fn main() {
-    let initial_value = "   \n●●●\n   ";
-    let mut game = Game::new(initial_value, '●', ' ');
+    let filename = "game.txt";
+    let contents = fs::read_to_string(filename)
+                     .expect(format!("file `{}` not found", filename).as_str());
+    let info: Vec<&str> = contents.split("\n").take(1).next().unwrap().split(":").collect();
+    let alive  = info[0].chars().next().unwrap();
+    let dead   = info[1].chars().next().unwrap();
+    let millis  = info[2].parse::<u64>().unwrap();
+    let starting_value = contents.split("\n").skip(1).collect();
+    let mut game = Game::new(starting_value, alive, dead);
 
+    clear_terminal();
     println!("{}", game.to_string());
 
     loop {
-        thread::sleep(time::Duration::from_millis(250));
+        thread::sleep(time::Duration::from_millis(millis));
         game.next();
         clear_terminal();
         print!("{}", game.to_string());
@@ -40,15 +48,14 @@ impl Pos {
 }
 
 impl Game {
-    fn new(starting_value: &str, alive: char, dead: char) -> Self {
+    fn new(starting_value: Vec<&str>, alive: char, dead: char) -> Self {
         let mut game = Game {
             grid: vec![],
             alive: alive,
             dead: dead
         };
 
-        let rows = starting_value.split("\n");
-        for row in rows {
+        for row in starting_value {
             let row = row.chars().map(|c| c == alive).collect();
             game.grid.push(row);
         }
