@@ -4,7 +4,7 @@ fn main() {
     let filename = "game.txt";
     let contents = fs::read_to_string(filename)
                      .expect(format!("file `{}` not found", filename).as_str());
-    let conf = get_conf(&contents);
+    let conf = GameConf::new(&contents);
     let mut game = Game::new(conf);
     game.start();
 }
@@ -16,18 +16,35 @@ struct GameConf {
     starting_value: Vec<String>
 }
 
-fn get_conf(contents: &String) -> GameConf {
-    let info: Vec<&str> = contents.split("\n").take(1).next().unwrap().split(":").collect();
-    let alive  = info[0].chars().next().unwrap();
-    let dead   = info[1].chars().next().unwrap();
-    let millis = info[2].parse::<u64>().unwrap();
-    let starting_value = contents.split("\n").skip(1).map(|s| s.to_string()).collect();
-    GameConf { alive: alive, dead: dead, millis: millis, starting_value: starting_value }
+impl GameConf {
+    fn new(contents: &String) -> Self {
+        let info: Vec<&str> = contents.split("\n")
+                                      .take(1)
+                                      .next()
+                                      .expect("Unable to load game information, usage dead:alive:milliseconds")
+                                      .split(":")
+                                      .collect();
+                                      
+        let alive  = match info[0].chars().next() {
+            Some(val) => val,
+            None => 'X',
+        };
+        let dead   = match info[1].chars().next() {
+            Some(val) => val,
+            None => ' '
+        };
+        let millis = match info[2].parse::<u64>() {
+            Ok(val) => val,
+            Err(_) => 500,
+        };
+        let starting_value = contents.split("\n")
+                                     .skip(1)
+                                     .map(|s| s.to_string())
+                                     .collect();
+        GameConf { alive: alive, dead: dead, millis: millis, starting_value: starting_value }
+    }
 }
 
-fn clear_terminal() {
-    print!("\x1B[2J\x1B[1;1H");
-}
 
 struct Game {
     grid: Vec<Vec<bool>>,
@@ -65,15 +82,20 @@ impl Game {
     }
 
     fn start(&mut self) {
-        clear_terminal();
+        Game::clear_terminal();
         println!("{}", self.to_string());
 
         loop {
             thread::sleep(time::Duration::from_millis(self.conf.millis));
             self.next();
-            clear_terminal();
-            print!("{}", self.to_string());
+            Game::clear_terminal();
+            println!("{}", self.to_string());
         }
+    }
+
+
+    fn clear_terminal() {
+        print!("\x1B[2J\x1B[1;1H");
     }
 
     fn next(&mut self) {
@@ -81,20 +103,20 @@ impl Game {
         self.change_grid(&next_positions);
     }
 
-    fn calc_next_positions(&self, ) -> Vec<Pos> {
-        let mut change_positions:Vec<Pos> = Vec::new();
+    fn calc_next_positions(&self) -> Vec<Pos> {
+        let mut next_positions:Vec<Pos> = Vec::new();
 
         for i in 0..self.grid.len() {
             for j in 0..self.grid[i].len() {
                 let curr_alive = self.grid[i][j];
                 let next_alive = self.is_next_alive(i, j);
                 if next_alive != curr_alive {
-                    change_positions.push(Pos::from_usize(i, j));
+                    next_positions.push(Pos::from_usize(i, j));
                 }
             }
         }
 
-        change_positions
+        next_positions
     }
 
     fn change_grid(&mut self, next_positions: &Vec<Pos>) {
@@ -134,18 +156,19 @@ impl Game {
             self.grid[row as usize][col as usize]
         }
     }
+
+    fn row_to_string(&self, row: &Vec<bool>) -> String {
+        row.iter().map(|b| match b {
+            true => self.conf.alive,
+            false => self.conf.dead,
+        }).collect::<String>()
+    }
     
     fn to_string(&self) -> String {
-        let mut ret = String::new();
-        for row in &self.grid {
-            for unit in row {
-                ret.push(match unit {
-                    true => self.conf.alive,
-                    false => self.conf.dead,
-                });
-            }
-            ret.push_str("\n");
-        }
-        ret
+        self.grid
+            .iter()
+            .map(|row| self.row_to_string(row))
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 }
