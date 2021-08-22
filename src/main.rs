@@ -9,20 +9,20 @@ fn main() {
     game.start();
 }
 
-struct Conf {
+struct GameConf {
     alive: char,
     dead: char,
     millis: u64,
     starting_value: Vec<String>
 }
 
-fn get_conf(contents: &String) -> Conf {
+fn get_conf(contents: &String) -> GameConf {
     let info: Vec<&str> = contents.split("\n").take(1).next().unwrap().split(":").collect();
     let alive  = info[0].chars().next().unwrap();
     let dead   = info[1].chars().next().unwrap();
     let millis = info[2].parse::<u64>().unwrap();
     let starting_value = contents.split("\n").skip(1).map(|s| s.to_string()).collect();
-    Conf { alive: alive, dead: dead, millis: millis, starting_value: starting_value }
+    GameConf { alive: alive, dead: dead, millis: millis, starting_value: starting_value }
 }
 
 fn clear_terminal() {
@@ -31,7 +31,7 @@ fn clear_terminal() {
 
 struct Game {
     grid: Vec<Vec<bool>>,
-    conf: Conf,
+    conf: GameConf,
 }
 
 #[derive(Debug)]
@@ -50,7 +50,7 @@ impl Pos {
 }
 
 impl Game {
-    fn new(conf: Conf) -> Self {
+    fn new(conf: GameConf) -> Self {
         let mut game = Game {
             grid: vec![],
             conf: conf
