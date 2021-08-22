@@ -9,11 +9,11 @@ fn main() {
     game.start();
 }
 
-struct Conf<'a> {
+struct Conf {
     alive: char,
     dead: char,
     millis: u64,
-    starting_value: Vec<&'a str>
+    starting_value: Vec<String>
 }
 
 fn get_conf(contents: &String) -> Conf {
@@ -21,7 +21,7 @@ fn get_conf(contents: &String) -> Conf {
     let alive  = info[0].chars().next().unwrap();
     let dead   = info[1].chars().next().unwrap();
     let millis = info[2].parse::<u64>().unwrap();
-    let starting_value = contents.split("\n").skip(1).collect();
+    let starting_value = contents.split("\n").skip(1).map(|s| s.to_string()).collect();
     Conf { alive: alive, dead: dead, millis: millis, starting_value: starting_value }
 }
 
@@ -31,9 +31,7 @@ fn clear_terminal() {
 
 struct Game {
     grid: Vec<Vec<bool>>,
-    alive: char,
-    dead: char,
-    millis: u64
+    conf: Conf,
 }
 
 #[derive(Debug)]
@@ -55,15 +53,14 @@ impl Game {
     fn new(conf: Conf) -> Self {
         let mut game = Game {
             grid: vec![],
-            alive: conf.alive,
-            dead: conf.dead,
-            millis: conf.millis
+            conf: conf
         };
 
-        for row in &conf.starting_value {
-            let row = row.chars().map(|c| c == conf.alive).collect();
+        for row in &game.conf.starting_value {
+            let row = row.chars().map(|c| c == game.conf.alive).collect();
             game.grid.push(row);
         }
+
         game
     }
 
@@ -72,7 +69,7 @@ impl Game {
         println!("{}", self.to_string());
 
         loop {
-            thread::sleep(time::Duration::from_millis(self.millis));
+            thread::sleep(time::Duration::from_millis(self.conf.millis));
             self.next();
             clear_terminal();
             print!("{}", self.to_string());
@@ -143,8 +140,8 @@ impl Game {
         for row in &self.grid {
             for unit in row {
                 ret.push(match unit {
-                    true => self.alive,
-                    false => self.dead,
+                    true => self.conf.alive,
+                    false => self.conf.dead,
                 });
             }
             ret.push_str("\n");
