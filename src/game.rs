@@ -25,19 +25,18 @@ impl Pos {
 
 impl Game {
     pub fn new(conf: GameConf) -> Self {
-        let mut game = Game {
-            grid: vec![],
-            conf: conf,
+        let string_to_live_row = |row: &String| {
+            row.chars()
+               .map(|c| c == conf.alive)
+               .collect()
         };
 
-        for row in &game.conf.starting_value {
-            let row = row.chars()
-                         .map(|c| c == game.conf.alive)
-                         .collect();
-            game.grid.push(row);
-        }
+        let grid = conf.starting_value
+                       .iter()
+                       .map(|row| string_to_live_row(row))
+                       .collect();
 
-        game
+        Game { grid: grid, conf: conf }
     }
 
     pub fn start(&mut self) {
@@ -138,7 +137,7 @@ impl Game {
 
     fn row_to_string(&self, row: &Vec<bool>) -> String {
         row.iter()
-            .map(|b| match b {
+            .map(|alive| match alive {
                 true => self.conf.alive,
                 false => self.conf.dead,
             })
