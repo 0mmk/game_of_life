@@ -1,4 +1,5 @@
 use crate::game_conf::GameConf;
+use std::{thread, time};
 
 pub struct Game {
     grid: Vec<Vec<bool>>,
@@ -30,7 +31,9 @@ impl Game {
         };
 
         for row in &game.conf.starting_value {
-            let row = row.chars().map(|c| c == game.conf.alive).collect();
+            let row = row.chars()
+                         .map(|c| c == game.conf.alive)
+                         .collect();
             game.grid.push(row);
         }
 
@@ -42,11 +45,15 @@ impl Game {
         println!("{}", self.to_string());
 
         loop {
-            std::thread::sleep(std::time::Duration::from_millis(self.conf.millis));
+            self.sleep();
             self.next();
             Game::clear_terminal();
             println!("{}", self.to_string());
         }
+    }
+
+    fn sleep(&self) {
+        thread::sleep(time::Duration::from_millis(self.conf.millis));
     }
 
     fn clear_terminal() {
@@ -55,42 +62,42 @@ impl Game {
 
     fn next(&mut self) {
         let next_positions = self.calc_next_positions();
-        self.change_grid(&next_positions);
+        self.change_liveness_of_grid(&next_positions);
     }
 
     fn calc_next_positions(&self) -> Vec<Pos> {
-        let mut next_positions: Vec<Pos> = Vec::new();
-
-        for i in 0..self.grid.len() {
-            for j in 0..self.grid[i].len() {
-                let curr_alive = self.grid[i][j];
-                let next_alive = self.is_next_alive(i, j);
-                if next_alive != curr_alive {
-                    next_positions.push(Pos::from_usize(i, j));
-                }
-            }
-        }
-
-        next_positions
+        (0..self.grid.len())
+            .map(|row| self.calc_next_positions_for_a_row(row))
+            .into_iter()
+            .flatten()
+            .collect()
     }
 
-    fn change_grid(&mut self, next_positions: &Vec<Pos>) {
+    fn calc_next_positions_for_a_row(&self, row: usize) -> Vec<Pos> {
+        (0..self.grid[row].len())
+            .filter(|&col| {
+                let curr_pos = Pos::from_usize(row, col);
+                self.is_pos_alive(&curr_pos) != self.is_next_alive(&curr_pos)
+            })
+            .map(|col| Pos::from_usize(row, col))
+            .collect()
+    }
+
+    fn change_liveness_of_grid(&mut self, next_positions: &Vec<Pos>) {
         for pos in next_positions {
             let (row, col) = (pos.row as usize, pos.col as usize);
             self.grid[row][col] = !self.grid[row][col];
         }
     }
 
-    fn is_next_alive(&self, row: usize, col: usize) -> bool {
-        let curr_pos = Pos::from_usize(row, col);
-        let neighbors = self.get_neighbors(&curr_pos);
+    fn is_next_alive(&self, pos: &Pos) -> bool {
+        let neighbors = self.get_neighbors(pos);
         let num_of_neighbors = neighbors
             .iter()
-            .map(|p| self.is_alive(p))
-            .filter(|&e| e == true)
+            .filter(|p| self.is_alive(p))
             .count();
 
-        num_of_neighbors == 3 || (self.is_alive(&curr_pos) && num_of_neighbors == 2)
+        num_of_neighbors == 3 || (self.is_alive(pos) && num_of_neighbors == 2)
     }
 
     fn get_neighbors(&self, pos: &Pos) -> Vec<Pos> {
@@ -109,17 +116,24 @@ impl Game {
     }
 
     fn is_alive(&self, pos: &Pos) -> bool {
+        if self.is_outside_of_grid(pos) {
+            false
+        } else {
+            self.is_pos_alive(pos)
+        }
+    }
+
+    fn is_pos_alive(&self, pos: &Pos) -> bool {
+        self.grid[pos.row as usize][pos.col as usize]
+    }
+
+    fn is_outside_of_grid(&self, pos: &Pos) -> bool {
         let (row, col) = (pos.row, pos.col);
 
-        if row < 0
+        row < 0 
             || row >= self.grid.len() as isize
             || col < 0
             || col >= self.grid[row as usize].len() as isize
-        {
-            false
-        } else {
-            self.grid[row as usize][col as usize]
-        }
     }
 
     fn row_to_string(&self, row: &Vec<bool>) -> String {
@@ -128,7 +142,7 @@ impl Game {
                 true => self.conf.alive,
                 false => self.conf.dead,
             })
-            .collect::<String>()
+            .collect()
     }
 
     fn to_string(&self) -> String {
