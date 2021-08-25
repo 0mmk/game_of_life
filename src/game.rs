@@ -1,5 +1,5 @@
 use crate::game_conf::GameConf;
-use std::{thread, time};
+use std::{process::exit, thread, time};
 
 pub struct Game {
     grid: Vec<Vec<bool>>,
@@ -25,9 +25,20 @@ impl Pos {
 
 impl Game {
     pub fn new(conf: GameConf) -> Self {
+        let convert_chars_to_cell = |c: char| {
+            if c == conf.alive {
+                true
+            } else if c == conf.dead {
+                false
+            } else {
+                eprintln!("Unexpected character (not alive nor dead char): {}", c);
+                exit(1);
+            }
+        };
+
         let string_to_live_row = |row: &String| {
             row.chars()
-               .map(|c| c == conf.alive)
+               .map(|c| convert_chars_to_cell(c))
                .collect()
         };
 

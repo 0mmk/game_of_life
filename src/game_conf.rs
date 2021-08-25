@@ -1,3 +1,5 @@
+use std::process::exit;
+
 pub struct GameConf {
     pub alive: char,
     pub dead: char,
@@ -17,15 +19,24 @@ impl GameConf {
 
         let alive = match info[0].chars().next() {
             Some(val) => val,
-            None => 'X',
+            None => {
+                eprintln!("Unable to find alive char");
+                exit(2);
+            },
         };
         let dead = match info[1].chars().next() {
             Some(val) => val,
-            None => ' ',
+            None => {
+                eprintln!("Unable to find dead char");
+                exit(3);
+            }
         };
         let millis = match info[2].parse::<u64>() {
             Ok(val) => val,
-            Err(_) => 500,
+            Err(err) => {
+                eprintln!("{}", err.to_string());
+                exit(4);
+            },
         };
         let starting_value = contents
             .split("\n")
