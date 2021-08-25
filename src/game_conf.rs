@@ -33,10 +33,10 @@ impl GameConf {
             .map(|s| s.to_string())
             .collect();
         GameConf {
-            alive: alive,
-            dead: dead,
-            millis: millis,
-            starting_value: starting_value,
+            alive,
+            dead,
+            millis,
+            starting_value,
         }
     }
 }

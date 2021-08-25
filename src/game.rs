@@ -19,7 +19,7 @@ impl Pos {
         }
     }
     fn from(row: isize, col: isize) -> Self {
-        Pos { row: row, col: col }
+        Pos { row, col }
     }
 }
 
@@ -56,7 +56,7 @@ impl Game {
     }
 
     fn clear_terminal() {
-        print!("\x1B[2J\x1B[1;1H");
+        print!("\x1B[2J");
     }
 
     fn next(&mut self) {
